@@ -56,9 +56,7 @@ def process_uploaded_pdf(file_bytes):
 
         temp_dir = Path(tempfile.gettempdir())
 
-        temp_path = (
-            temp_dir / f"docmind_{file_hash}.pdf"
-        )
+        temp_path = temp_dir / f"docmind_{file_hash}.pdf"
 
         temp_path.write_bytes(file_bytes)
 
@@ -75,6 +73,54 @@ def process_uploaded_pdf(file_bytes):
 
             except OSError:
                 pass
+
+
+# ---------------------------------------------------------
+# SOURCE DISPLAY
+# ---------------------------------------------------------
+
+def display_sources(sources):
+    """Display useful source information for retrieved chunks."""
+
+    if not sources:
+        return
+
+    with st.expander("📚 Sources"):
+
+        for i, source in enumerate(sources, start=1):
+
+            page = source.get(
+                "page",
+                "Unknown"
+            )
+
+            section = source.get(
+                "section_title",
+                ""
+            )
+
+            text = source.get(
+                "text",
+                ""
+            ).strip()
+
+            st.markdown(
+                f"**Source {i} — Page {page}**"
+            )
+
+            if section:
+                st.caption(section)
+
+            if text:
+                preview = text[:300]
+
+                if len(text) > 300:
+                    preview += "..."
+
+                st.write(preview)
+
+            if i < len(sources):
+                st.divider()
 
 
 # ---------------------------------------------------------
@@ -145,7 +191,6 @@ if st.session_state.document_id != document_id:
 
             st.stop()
 
-
         with st.spinner(
             "Building document search index..."
         ):
@@ -153,7 +198,6 @@ if st.session_state.document_id != document_id:
             index, _, filtered_chunks = (
                 create_vector_index(chunks)
             )
-
 
         # Commit the new document only
         # after successful processing.
@@ -171,7 +215,6 @@ if st.session_state.document_id != document_id:
         st.session_state.index = index
 
         st.session_state.messages = []
-
 
     except Exception as error:
 
@@ -214,41 +257,14 @@ for message in st.session_state.messages:
             message["content"]
         )
 
-        # Display sources separately
-        # from the answer.
-
         if (
             message["role"] == "assistant"
             and message.get("sources")
         ):
 
-            with st.expander(
-                "📚 Sources"
-            ):
-
-                for source in message["sources"]:
-
-                    page = source.get(
-                        "page",
-                        "Unknown"
-                    )
-
-                    section = source.get(
-                        "section_title",
-                        ""
-                    )
-
-                    if section:
-
-                        st.markdown(
-                            f"- Page {page} — {section}"
-                        )
-
-                    else:
-
-                        st.markdown(
-                            f"- Page {page}"
-                        )
+            display_sources(
+                message["sources"]
+            )
 
 
 # ---------------------------------------------------------
@@ -279,7 +295,6 @@ if question:
 
         st.markdown(question)
 
-
     # Generate answer
 
     with st.chat_message("assistant"):
@@ -304,42 +319,9 @@ if question:
 
                 sources = []
 
-
         st.markdown(answer)
 
-
-        # Display sources
-
-        if sources:
-
-            with st.expander(
-                "📚 Sources"
-            ):
-
-                for source in sources:
-
-                    page = source.get(
-                        "page",
-                        "Unknown"
-                    )
-
-                    section = source.get(
-                        "section_title",
-                        ""
-                    )
-
-                    if section:
-
-                        st.markdown(
-                            f"- Page {page} — {section}"
-                        )
-
-                    else:
-
-                        st.markdown(
-                            f"- Page {page}"
-                        )
-
+        display_sources(sources)
 
     # Save assistant response
 

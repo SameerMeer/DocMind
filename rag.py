@@ -2,7 +2,7 @@ import re
 
 import faiss
 import numpy as np
-import ollama
+from groq import Groq
 
 from sentence_transformers import (
     SentenceTransformer,
@@ -16,7 +16,9 @@ from sentence_transformers import (
 
 EMBEDDING_MODEL = "all-MiniLM-L6-v2"
 RERANKER_MODEL = "cross-encoder/ms-marco-MiniLM-L-6-v2"
-OLLAMA_MODEL = "llama3.2:3b"
+GROQ_MODEL = "openai/gpt-oss-20b"
+
+groq_client = Groq()
 
 SEMANTIC_TOP_K = 8
 KEYWORD_TOP_K = 8
@@ -967,7 +969,7 @@ def generate_answer(
     question,
     results,
 ):
-    """Generate a grounded answer using Ollama."""
+    """Generate a grounded answer using Groq."""
 
     if not results:
         return (
@@ -1021,8 +1023,8 @@ ANSWER:
 
     try:
 
-        response = ollama.chat(
-            model=OLLAMA_MODEL,
+        response = groq_client.chat.completions.create(
+            model=GROQ_MODEL,
             messages=[
                 {
                     "role": "system",
@@ -1033,16 +1035,13 @@ ANSWER:
                     "content": user_prompt,
                 },
             ],
-            options={
-                "temperature": 0,
-                "num_predict": 400,
-            },
+            temperature=0,
+            max_tokens=400,
         )
 
         answer = (
-            response
-            .get("message", {})
-            .get("content", "")
+            response.choices[0]
+            .message.content
             .strip()
         )
 
